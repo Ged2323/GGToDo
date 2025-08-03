@@ -10,19 +10,51 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @Query private var tasks: [Task]
+    @State private var showingAddTask = false
+    @State private var showCompleted = true
 
     var body: some View {
         NavigationSplitView {
             List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+                ForEach(tasks.filter { showCompleted || !$0.isCompleted }) { task in
+                    HStack {
+                        Button {
+                            withAnimation {
+                                task.isCompleted.toggle()
+                                task.dateCompleted = task.isCompleted ? Date() : nil
+                            }
+                        } label: {
+                            Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                                .foregroundColor(task.isCompleted ? .green : .gray)
+                        }
+                        .buttonStyle(.plain)
+
+                        NavigationLink {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(task.title)
+                                    .font(.title)
+                                if let completedDate = task.dateCompleted {
+                                    Text("Completed on \(completedDate.formatted(date: .long, time: .shortened))")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .padding()
+                        } label: {
+                            VStack(alignment: .leading) {
+                                Text(task.title)
+                                    .strikethrough(task.isCompleted)
+                                if let dueDate = task.dueDate {
+                                    Text(dueDate, style: .date)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
                     }
                 }
-                .onDelete(perform: deleteItems)
+                .onDelete(perform: deleteTasks)
             }
 #if os(macOS)
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
@@ -34,33 +66,36 @@ struct ContentView: View {
                 }
 #endif
                 ToolbarItem {
-                    Button(action: addItem) {
+                    Button(action: { showingAddTask = true }) {
                         Label("Add Item", systemImage: "plus")
                     }
+                }
+                ToolbarItem {
+                    Toggle("Show Completed", isOn: $showCompleted)
+                        .toggleStyle(.switch)
                 }
             }
         } detail: {
             Text("Select an item")
         }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
+        .sheet(isPresented: $showingAddTask) {
+            AddTaskView()
         }
     }
 
-    private func deleteItems(offsets: IndexSet) {
+    // Removed addTask() function; now using sheet for adding tasks.
+
+    private func deleteTasks(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
-                modelContext.delete(items[index])
+                modelContext.delete(tasks[index])
             }
         }
     }
+   
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: Task.self, inMemory: true)
 }
