@@ -50,7 +50,7 @@ A clean, modern **To‑Do app** built with **SwiftUI** and **SwiftData**, design
 
 📂 Project Structure
 
-## 📂 Project Structure
+```
 GGToDo/
 ├── Models/
 │   └── Task.swift
@@ -62,7 +62,7 @@ GGToDo/
 │   └── .gitignore
 ├── README.md
 └── GGToDoApp.swift
-
+```
 ⸻
 
 📅 Roadmap
